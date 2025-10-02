@@ -1,6 +1,5 @@
 const mysql = require("mysql2/promise");
 const express = require("express");
-const e = require("express");
 const app = express();
 
 app.use(express.json());
@@ -16,8 +15,6 @@ async function startServer() {
       password: "deepak123",
       database: "detail",
     });
-
-    
 
     const [tables] = await connection.query("SHOW TABLES");
     console.log("Tables in database:", tables);
@@ -58,7 +55,7 @@ async function startServer() {
         res.status(500).json({ message: "DB fetch failed", error: dbError.message });
       }
     });
-               
+
     app.put("/:id", async (req, res) => {
       const id = parseInt(req.params.id, 10);
 
@@ -101,6 +98,23 @@ async function startServer() {
       }
     });
 
+    app.delete("/:id", async (req, res) => {
+      const id = parseInt(req.params.id, 10);
+
+      try {
+        const [result] = await connection.execute("DELETE FROM users WHERE id = ?", [id]);
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({ message: "User deleted successfully" });
+      } catch (dbError) {
+        console.error("Database error:", dbError);
+        res.status(500).json({ message: "DB delete failed", error: dbError.message });
+      }
+    });
+
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
     });
@@ -110,4 +124,4 @@ async function startServer() {
 }
 
 startServer();
-   
+
