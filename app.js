@@ -1,5 +1,6 @@
 const mysql = require("mysql2/promise");
 const express = require("express");
+const bcrypt = require("bcryptjs"); 
 const app = express();
 
 app.use(express.json());
@@ -18,32 +19,41 @@ async function startServer() {
 
     const [tables] = await connection.query("SHOW TABLES");
     console.log("Tables in database:", tables);
-    console.log("Connected to MySQL ");
+    console.log("Connected to MySQL");
 
     app.post("/", async (req, res) => {
       const { name, firstName, lastName, phoneNumber, companyName, email, password } = req.body;
 
+      if (!password) {
+        return res.status(400).json({ message: "Password is required" });
+      }
+
       try {
+        const [nameRows] = await connection.execute("SELECT id FROM users WHERE name = ?", [name]);
+        if (nameRows.length > 0) {
+          return res.status(400).json({ message: "Name already exists. Please use another name." });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const query = `
           INSERT INTO users (name, firstName, lastName, phoneNumber, companyName, email, password)
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
 
-        await connection.execute(query, [name, firstName, lastName, phoneNumber, companyName, email, password]);
+        await connection.execute(query, [name, firstName, lastName, phoneNumber, companyName, email, hashedPassword]);
 
         res.status(201).json({ message: "User added successfully" });
       } catch (err) {
-        if (err.code === "ER_DUP_ENTRY") {
-          res.status(409).json({ message: "Email already exists. Please use another email." });
-        } else {
-          res.status(500).json({ message: "DB insert failed", error: err.message });
-        }
+        res.status(500).json({ message: "DB insert failed", error: err.message });
       }
     });
 
     app.get("/", async (req, res) => {
       try {
-        const [rows] = await connection.execute("SELECT * FROM users ORDER BY id ASC");
+        const [rows] = await connection.execute(
+          "SELECT id, name, firstName, lastName, phoneNumber, companyName, email FROM users ORDER BY id ASC"
+        );
 
         if (rows.length === 0) {
           return res.status(200).json({ message: "No users found", data: [] });
@@ -56,45 +66,58 @@ async function startServer() {
       }
     });
 
-    app.put("/:id", async (req, res) => {
+    app.put("/api/user/:id", async (req, res) => {
       const id = parseInt(req.params.id, 10);
-
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({ message: "Request body is missing" });
-      }
-
       const { name, email, password, firstName, lastName, phoneNumber, companyName } = req.body;
 
       try {
+        const [existingUserRows] = await connection.execute("SELECT * FROM users WHERE id = ?", [id]);
+        if (existingUserRows.length === 0) {
+          return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        if (name) {
+          const [nameRows] = await connection.execute("SELECT id FROM users WHERE name = ?", [name]);
+          if (nameRows.length > 0 && nameRows[0].id !== id) {
+            return res.status(400).json({ success: false, message: "Name already exists" });
+          }
+        }
+
         const fields = [];
         const values = [];
 
         if (name) { fields.push("name=?"); values.push(name); }
-        if (email) { fields.push("email=?"); values.push(email); }
-        if (password) { fields.push("password=?"); values.push(password); }
+        if (email) { fields.push("email=?"); values.push(email); } 
+        if (password) {
+          const hashedPassword = await bcrypt.hash(password, 10);
+          fields.push("password=?"); values.push(hashedPassword);
+        }
         if (firstName) { fields.push("firstName=?"); values.push(firstName); }
         if (lastName) { fields.push("lastName=?"); values.push(lastName); }
         if (phoneNumber) { fields.push("phoneNumber=?"); values.push(phoneNumber); }
         if (companyName) { fields.push("companyName=?"); values.push(companyName); }
 
         if (fields.length === 0) {
-          return res.status(400).json({ message: "No fields to update" });
+          return res.status(400).json({ success: false, message: "No fields to update" });
         }
 
         values.push(id);
 
-        const query = `UPDATE users SET ${fields.join(", ")} WHERE id=?`;
+        await connection.execute(`UPDATE users SET ${fields.join(", ")} WHERE id=?`, values);
 
-        const [result] = await connection.execute(query, values);
+        const [updatedRows] = await connection.execute(
+          "SELECT id, name, email, firstName, lastName, phoneNumber, companyName FROM users WHERE id = ?",
+          [id]
+        );
 
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ message: "User not found" });
-        }
+        res.status(200).json({
+          success: true,
+          message: "User updated successfully",
+          data: updatedRows[0]
+        });
 
-        res.json({ message: "User updated successfully" });
-      } catch (dbError) {
-        console.error("Database error:", dbError);
-        res.status(500).json({ message: "DB update failed", error: dbError.message });
+      } catch (err) {
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
       }
     });
 
@@ -124,4 +147,3 @@ async function startServer() {
 }
 
 startServer();
-
