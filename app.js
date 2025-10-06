@@ -28,123 +28,215 @@ async function startServer() {
 
     console.log(" Connected to MySQL");
 
-   app.post("/", async (req, res) => {
-  const {
-    name,
-    firstName,
-    lastName,
-    phoneNumber,
-    companyName,
-    email,
-    password,
-    isActive = true,
-    isDeleted = false,
-  } = req.body;
+    app.post("/", async (req, res) => {
+      const {
+        name,
+        firstName,
+        lastName,
+        phoneNumber,
+        companyName,
+        email,
+        password,
+        isActive = true,
+        isDeleted = false,
+      } = req.body;
 
-  if (!password) return sendResponse(res, false, "Password is required", null, 400);
-  if (!email || !isValidEmail(email)) return sendResponse(res, false, "Invalid email format", null, 400);
+      if (!password)
+        return sendResponse(res, false, "Password is required", null, 400);
 
-  try {
-    const [nameRows] = await connection.execute("SELECT id FROM users WHERE name = ?", [name]);
-    if (nameRows.length > 0)
-      return sendResponse(res, false, "Name already exists. Please use another name.", null, 400);
+      if (!email) {
+        return sendResponse(res, false, "Email is required", null, 400);
+      }
+      if (!isValidEmail(email))
+        return sendResponse(res, false, "Invalid email format", null, 400);
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+      try {
+        const [nameRows] = await connection.execute(
+          "SELECT id FROM users WHERE name = ?",
+          [name]
+        );
+        if (nameRows.length > 0)
+          return sendResponse(
+            res,
+            false,
+            "Name already exists. Please use another name.",
+            null,
+            400
+          );
 
-    const query = `
+        const [emailRows] = await connection.execute(
+          "SELECT id FROM users WHERE email = ? ",
+          [email]
+        );
+        if (emailRows.length > 0)
+          return sendResponse(
+            res,
+            false,
+            "Email already exists. Please use another email.",
+            null,
+            400
+          );
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const query = `
       INSERT INTO users (name, firstName, lastName, phoneNumber, companyName, email, password, isActive, isDeleted)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    await connection.execute(query, [
-      name,
-      firstName,
-      lastName,
-      phoneNumber,
-      companyName,
-      email,
-      hashedPassword,
-      isActive,
-      isDeleted,
-    ]);
+        await connection.execute(query, [
+          name,
+          firstName,
+          lastName,
+          phoneNumber,
+          companyName,
+          email,
+          hashedPassword,
+          isActive,
+          isDeleted,
+        ]);
 
-    sendResponse(res, true, "User added successfully", null, 201);
-  } catch (err) {
-    if (err.code === "ER_DUP_ENTRY") {
-      if (err.message.includes("users.email")) {
-        return sendResponse(res, false, "Email already exists. Please use another email.", null, 400);
-      } else if (err.message.includes("users.name")) {
-        return sendResponse(res, false, "Name already exists. Please use another name.", null, 400);
+        sendResponse(res, true, "User added successfully", null, 201);
+      } catch (err) {
+        sendResponse(
+          res,
+          false,
+          "DB insert failed",
+          { error: err.message },
+          500
+        );
       }
-    }
+    });
 
-    sendResponse(res, false, "DB insert failed", { error: err.message }, 500);
-  }
-});
+    app.get("/", async (req, res) => {
+      try {
+        const [rows] = await connection.execute(
+          "SELECT id, name, firstName, lastName, phoneNumber, companyName, email, isActive, isDeleted FROM users ORDER BY id ASC"
+        );
 
+        const users = rows.map((user) => ({
+          ...user,
+          isActive: Boolean(user.isActive),
+          isDeleted: Boolean(user.isDeleted),
+        }));
 
-   app.get("/", async (req, res) => {
-  try {
-    const [rows] = await connection.execute(
-      "SELECT id, name, firstName, lastName, phoneNumber, companyName, email, isActive, isDeleted FROM users ORDER BY id ASC"
-    );
+        if (users.length === 0) {
+          return sendResponse(res, true, "No users found", []);
+        }
 
-    const users = rows.map((user) => ({
-      ...user,
-      isActive: Boolean(user.isActive),
-      isDeleted: Boolean(user.isDeleted),
-    }));
-
-    if (users.length === 0) {
-      return sendResponse(res, true, "No users found", []);
-    }
-
-    sendResponse(res, true, "Get successful", users);
-  } catch (err) {
-    sendResponse(res, false, "DB fetch failed", { error: err.message }, 500);
-  }
-});
-
+        sendResponse(res, true, "Get successful", users);
+      } catch (err) {
+        sendResponse(
+          res,
+          false,
+          "DB fetch failed",
+          { error: err.message },
+          500
+        );
+      }
+    });
 
     app.put("/api/user/:id", async (req, res) => {
       const id = parseInt(req.params.id, 10);
-      const { name, email, password, firstName, lastName, phoneNumber, companyName, isActive, isDeleted } = req.body;
+      const {
+        name,
+        email,
+        password,
+        firstName,
+        lastName,
+        phoneNumber,
+        companyName,
+        isActive,
+        isDeleted,
+      } = req.body;
 
       try {
-        const [existingUserRows] = await connection.execute("SELECT * FROM users WHERE id = ?", [id]);
+        const [existingUserRows] = await connection.execute(
+          "SELECT * FROM users WHERE id = ?",
+          [id]
+        );
         if (existingUserRows.length === 0)
           return sendResponse(res, false, "User not found", null, 404);
 
-        if (email && !isValidEmail(email))
+        if (!name) {
+          return sendResponse(res, false, "Name is required", null, 400);
+        }
+
+        if (!email) {
+          return sendResponse(res, false, "Email is required", null, 400);
+        }
+
+        if (!isValidEmail(email))
           return sendResponse(res, false, "Invalid email format", null, 400);
-            
-        if (name) {
-          const [nameRows] = await connection.execute("SELECT id FROM users WHERE name = ?", [name]);
+
+        const user = existingUserRows[0];
+        if (user.name !== name) {
+          const [nameRows] = await connection.execute(
+            "SELECT id FROM users WHERE name = ?",
+            [name]
+          );
           if (nameRows.length > 0 && nameRows[0].id !== id)
             return sendResponse(res, false, "Name already exists", null, 400);
+        }
+
+        if (user.email !== email) {
+          const [emailRows] = await connection.execute(
+            "SELECT id FROM users WHERE email = ? AND id != ?",
+            [email, id]
+          );
+          if (emailRows.length > 0 && emailRows[0].id !== id)
+            return sendResponse(res, false, "Email already exists", null, 400);
         }
 
         const fields = [];
         const values = [];
 
-        if (name) { fields.push("name=?"); values.push(name); }
-        if (email) { fields.push("email=?"); values.push(email); }
+        if (name) {
+          fields.push("name=?");
+          values.push(name);
+        }
+        if (email) {
+          fields.push("email=?");
+          values.push(email);
+        }
         if (password) {
           const hashedPassword = await bcrypt.hash(password, 10);
-          fields.push("password=?"); values.push(hashedPassword);
+          fields.push("password=?");
+          values.push(hashedPassword);
         }
-        if (firstName) { fields.push("firstName=?"); values.push(firstName); }
-        if (lastName) { fields.push("lastName=?"); values.push(lastName); }
-        if (phoneNumber) { fields.push("phoneNumber=?"); values.push(phoneNumber); }
-        if (companyName) { fields.push("companyName=?"); values.push(companyName); }
-        if (isActive !== undefined) { fields.push("isActive=?"); values.push(isActive); }
-        if (isDeleted !== undefined) { fields.push("isDeleted=?"); values.push(isDeleted); }
+        if (firstName) {
+          fields.push("firstName=?");
+          values.push(firstName);
+        }
+        if (lastName) {
+          fields.push("lastName=?");
+          values.push(lastName);
+        }
+        if (phoneNumber) {
+          fields.push("phoneNumber=?");
+          values.push(phoneNumber);
+        }
+        if (companyName) {
+          fields.push("companyName=?");
+          values.push(companyName);
+        }
+        if (isActive !== undefined) {
+          fields.push("isActive=?");
+          values.push(isActive);
+        }
+        if (isDeleted !== undefined) {
+          fields.push("isDeleted=?");
+          values.push(isDeleted);
+        }
 
         if (fields.length === 0)
           return sendResponse(res, false, "No fields to update", null, 400);
 
         values.push(id);
-        await connection.execute(`UPDATE users SET ${fields.join(", ")} WHERE id=?`, values);
+        await connection.execute(
+          `UPDATE users SET ${fields.join(", ")} WHERE id=?`,
+          values
+        );
 
         const [updatedRows] = await connection.execute(
           "SELECT id, name, email, firstName, lastName, phoneNumber, companyName, isActive, isDeleted FROM users WHERE id = ?",
@@ -161,24 +253,31 @@ async function startServer() {
       const id = parseInt(req.params.id, 10);
 
       try {
-        const [result] = await connection.execute("DELETE FROM users WHERE id = ?", [id]);
+        const [result] = await connection.execute(
+          "DELETE FROM users WHERE id = ?",
+          [id]
+        );
         if (result.affectedRows === 0)
           return sendResponse(res, false, "User not found", null, 404);
 
         sendResponse(res, true, "User deleted successfully", null);
       } catch (err) {
-        sendResponse(res, false, "DB delete failed", { error: err.message }, 500);
+        sendResponse(
+          res,
+          false,
+          "DB delete failed",
+          { error: err.message },
+          500
+        );
       }
     });
 
-    app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+    app.listen(PORT, () =>
+      console.log(`Server running at http://localhost:${PORT}`)
+    );
   } catch (err) {
     console.error("Database connection failed:", err.message);
   }
 }
 
 startServer();
-
-
-
-
