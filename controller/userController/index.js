@@ -1,6 +1,4 @@
-module.exports = {
-  CreateUser: require("./CreateUser"),
-  GetUsers: require("./GetUsers"),
-  UpdateUser: require("./UpdateUser"),
-  DeleteUser: require("./DeleteUser"),
-};
+export * from './CreateUser'
+export * from './DeleteUser'
+export * from './GetUsers'
+export * from './UpdateUser'

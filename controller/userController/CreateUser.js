@@ -1,11 +1,12 @@
-const bcrypt = require("bcryptjs");
+import bcrypt from "bcryptjs";
+import { pool } from "../../db/conn";
 
-async function CreateUser(req, res, pool) {
+export async function CreateUser(req, res) {
   try {
     const { name, firstName, lastName, phoneNumber, companyName, email, password } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: "Name, email and password are required" });
+      return res.status(400).json({ success: false, message: "Name, email, and password are required" });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,4 +33,3 @@ async function CreateUser(req, res, pool) {
   }
 }
 
-module.exports = CreateUser;

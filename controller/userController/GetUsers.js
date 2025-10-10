@@ -1,11 +1,14 @@
-const pool = require("../../db/conn");
+import bcrypt from "bcryptjs";
+import { pool } from "../../db/conn";
 
-module.exports = async (req, res) => {
+export async function GetUsers(req, res) {
   try {
-    const [rows] = await pool.query("SELECT * FROM users WHERE isDeleted = 0");
-    res.json({ success: true, users: rows });
-  } catch (error) {
-    console.error("GetUsers Error:", error);
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    const [rows] = await pool.query(
+      "SELECT id, name, firstName, lastName, phoneNumber, companyName, email, isActive, isDeleted FROM users"
+    );
+    res.json({ success: true, message: "Fetched users successfully", data: rows });
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
-};
+}
