@@ -10,7 +10,7 @@ export async function UpdateUser(req, res) {
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-
+       
     if (updates.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(updates.email)) {
