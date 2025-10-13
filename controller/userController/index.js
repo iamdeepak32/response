@@ -1,5 +1,5 @@
-export * from './CreateUser'
-export * from './DeleteUser'
-export * from './GetUsers'
-export * from './UpdateUser'
+export * from './CreateUser.js'
+export * from './DeleteUser.js'
+export * from './GetUsers.js'
+export * from './UpdateUser.js'
 

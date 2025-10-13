@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { pool } from "../../db/conn";
+import { pool } from "../../db/conn.js";
 
 export async function CreateUser(req, res) {
   try {

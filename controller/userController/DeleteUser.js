@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { pool } from "../../db/conn";
+import { pool } from "../../db/conn.js";
 
 export async function DeleteUser(req, res) {
   const id = parseInt(req.params.id, 10);
