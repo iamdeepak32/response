@@ -3,35 +3,67 @@ import { pool } from "../../db/conn.js";
 
 export async function CreateUser(req, res) {
   try {
-    const { name, firstName, lastName, phoneNumber, companyName, email, password } = req.body;
+    const {
+      name,
+      firstName,
+      lastName,
+      phoneNumber,
+      companyName,
+      email,
+      password,
+      assignedCompanies
+    } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: "Name, email, and password are required" });
+    const [emailExists] = await pool.query(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
+    if (emailExists.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already in use",
+      });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ success: false, message: "Invalid email format" });
+    const [companyExists] = await pool.query(
+      "SELECT id FROM users WHERE companyName = ?",
+      [companyName]
+    );
+    if (companyExists.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Company "${companyName}" already exists`,
+      });
     }
 
-    const [existing] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
-    if (existing.length > 0) {
-      return res.status(400).json({ success: false, message: "Email already exists" });
+    let assigned = null;
+    if (assignedCompanies) {
+      if (Array.isArray(assignedCompanies) && assignedCompanies.length > 0) {
+        assigned = String(assignedCompanies[0]);
+      } else if (typeof assignedCompanies === "string" && assignedCompanies.trim() !== "") {
+        assigned = assignedCompanies.trim();
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await pool.query(
-      "INSERT INTO users (name, firstName, lastName, phoneNumber, companyName, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [name, firstName, lastName, phoneNumber, companyName, email, hashedPassword]
+      `INSERT INTO users 
+      (name, firstName, lastName, phoneNumber, companyName, email, password, assignedCompanies, isActive, isDeleted)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0)`,
+      [name, firstName, lastName, phoneNumber, companyName, email, hashedPassword, assigned]
     );
 
-    res.json({ success: true, message: "User created successfully" });
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ success: false, message: "Server error", error: err.message });
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+    });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 }
-
-
-

@@ -1,6 +1,12 @@
 import express from "express";
 import { userRouter } from "./userRoutes.js";
+import { companyRouter } from "./companyRoutes.js";
 
-export const mainRouter = express.Router();
+const mainRouter = express.Router();
 
-mainRouter.use("/api", userRouter);
+mainRouter.use("/user", userRouter);
+mainRouter.use("/company", companyRouter);
+
+export { mainRouter };
+
+
