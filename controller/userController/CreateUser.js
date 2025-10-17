@@ -25,23 +25,25 @@ export async function CreateUser(req, res) {
       });
     }
 
-    const [companyExists] = await pool.query(
-      "SELECT id FROM users WHERE companyName = ?",
-      [companyName]
-    );
-    if (companyExists.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Company "${companyName}" already exists`,
-      });
-    }
-
     let assigned = null;
     if (assignedCompanies) {
       if (Array.isArray(assignedCompanies) && assignedCompanies.length > 0) {
         assigned = String(assignedCompanies[0]);
       } else if (typeof assignedCompanies === "string" && assignedCompanies.trim() !== "") {
         assigned = assignedCompanies.trim();
+      }
+    }
+
+    if (assigned) {
+      const [companyExists] = await pool.query(
+        "SELECT id FROM users WHERE assignedCompanies = ?",
+        [assigned]
+      );
+      if (companyExists.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Company with ID "${assigned}" already exists`,
+        });
       }
     }
 
