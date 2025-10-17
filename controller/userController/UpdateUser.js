@@ -10,13 +10,13 @@ export async function UpdateUser(req, res) {
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-
+ 
     if (updates.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(updates.email)) {
         return res.status(400).json({ success: false, message: "Invalid email format" });
       }
-
+                  
       const [emailExists] = await pool.query(
         "SELECT id FROM users WHERE email = ? AND id != ?",
         [updates.email, id]
@@ -24,7 +24,7 @@ export async function UpdateUser(req, res) {
       if (emailExists.length > 0) {
         return res.status(400).json({ success: false, message: "Email already in use" });
       }
-    }
+    }          
 
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);

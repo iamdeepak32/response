@@ -18,7 +18,7 @@ export async function GetUsers(req, res) {
         assignedCompanies: parsed
       };
     });
-
+           
     res.json({
       success: true,
       message: "Fetched users successfully",

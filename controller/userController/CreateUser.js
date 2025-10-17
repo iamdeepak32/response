@@ -13,7 +13,7 @@ export async function CreateUser(req, res) {
       password,
       assignedCompanies
     } = req.body;
-
+ 
     const [emailExists] = await pool.query(
       "SELECT id FROM users WHERE email = ?",
       [email]
@@ -33,7 +33,7 @@ export async function CreateUser(req, res) {
         assigned = assignedCompanies.trim();
       }
     }
-
+    
     if (assigned) {
       const [companyExists] = await pool.query(
         "SELECT id FROM users WHERE assignedCompanies = ?",

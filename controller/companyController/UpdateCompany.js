@@ -19,7 +19,7 @@ export async function UpdateCompany(req, res) {
     if (fields.length === 0) {
       return res.status(400).json({ success: false, message: "No fields to update" });
     }
-
+        
     const setClause = fields.map(field => `${field} = ?`).join(", ");
     const values = fields.map(key => updates[key]);
     values.push(id);
