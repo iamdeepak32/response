@@ -12,7 +12,7 @@ export async function GetUsers(req, res) {
       if (user.assignedCompanies) {
         parsed = [Number(user.assignedCompanies)];
       }
-
+   
       return {
         ...user,
         assignedCompanies: parsed
@@ -34,3 +34,7 @@ export async function GetUsers(req, res) {
     });
   }
 }
+
+
+
+

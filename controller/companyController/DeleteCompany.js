@@ -11,12 +11,12 @@ export async function DeleteCompany(req, res) {
         message: "Company not found",
       });
     }
-
+       
     const [deletedUsers] = await pool.query(
       "DELETE FROM users WHERE assignedCompanies = ?",
       [id]
     );
-
+ 
     const [deletedCompany] = await pool.query("DELETE FROM company WHERE id = ?", [id]);
 
     res.json({
@@ -32,3 +32,6 @@ export async function DeleteCompany(req, res) {
     });
   }
 }
+
+
+

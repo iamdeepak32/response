@@ -1,9 +1,6 @@
 import express from "express";
 import { 
-  CreateCompany, 
-  GetCompanies, 
-  UpdateCompany, 
-  DeleteCompany 
+  CreateCompany, GetCompanies, UpdateCompany, DeleteCompany 
 } from "../controller/companyController/index.js";
 
 const companyRouter = express.Router();
@@ -14,3 +11,4 @@ companyRouter.put("/:id", UpdateCompany);
 companyRouter.delete("/:id", DeleteCompany);
 
 export { companyRouter };
+

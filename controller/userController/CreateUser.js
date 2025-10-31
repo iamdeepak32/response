@@ -13,7 +13,7 @@ export async function CreateUser(req, res) {
       password,
       assignedCompanies
     } = req.body;
- 
+          
     const [emailExists] = await pool.query(
       "SELECT id FROM users WHERE email = ?",
       [email]
@@ -31,19 +31,6 @@ export async function CreateUser(req, res) {
         assigned = String(assignedCompanies[0]);
       } else if (typeof assignedCompanies === "string" && assignedCompanies.trim() !== "") {
         assigned = assignedCompanies.trim();
-      }
-    }
-    
-    if (assigned) {
-      const [companyExists] = await pool.query(
-        "SELECT id FROM users WHERE assignedCompanies = ?",
-        [assigned]
-      );
-      if (companyExists.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: `Company with ID "${assigned}" already exists`,
-        });
       }
     }
 
