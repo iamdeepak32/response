@@ -1,0 +1,50 @@
+import { pool } from "../../db/conn.js";
+import { sendEmail } from "../utils/emailService.js";
+
+export async function sendinvitation(req, res) {
+  try {
+    const userId = req.params.id;
+
+    const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const user = rows[0];
+
+    const htmlContent = `
+      <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
+          <div style="background: white; border-radius: 10px; padding: 20px; max-width: 600px; margin: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            <h2 style="color: #333;">🎉 Invitation to Join ${user.companyName || "Our Platform"}</h2>
+            <p>Hi <b>${user.firstName || user.name}</b>,</p>
+            <p>We’re excited to invite you to our dashboard. Click below to join:</p>
+                    <a href="http://localhost:3000" 
+
+               style="background: #4CAF50; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px;">
+               Visit Dashboard
+            </a>
+            <p style="margin-top: 30px; font-size: 12px; color: #aaa;">© ${new Date().getFullYear()} Your Company</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    await sendEmail(user.email, "You're Invited!", htmlContent, true);
+
+    res.json({
+      success: true,
+      message: `Invitation email sent successfully to ${user.email}`,
+    });
+  } catch (error) {
+    console.error("Error sending invitation:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send invitation",
+      error: error.message,
+    });
+  }
+}

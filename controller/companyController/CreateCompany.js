@@ -13,7 +13,7 @@ export async function CreateCompany(req, res) {
     if (existing.length > 0) {
       return res.status(400).json({ success: false, message: "Company already exists" });
     }
-             
+                        
     const hashedPassword = await bcrypt.hash(password, 10);
           
     await pool.query(

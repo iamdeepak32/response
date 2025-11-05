@@ -18,7 +18,7 @@ export async function updateAddress(req, res) {
       latitude,
       longitude,
     } = req.body;
-
+  
     const [address] = await pool.query("SELECT * FROM addresses WHERE id = ?", [id]);
     if (address.length === 0) {
       return res.status(404).json({ success: false, message: "Address not found" });
