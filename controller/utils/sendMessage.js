@@ -1,4 +1,3 @@
-// utils/sendMessage.js
 import { sendEmail } from "./emailService.js";
 
 export async function sendInvitationEmail(user) {
@@ -9,12 +8,21 @@ export async function sendInvitationEmail(user) {
           <h2 style="color: #333;">🎉 Invitation to Join ${user.companyName || "Our Platform"}</h2>
           <p>Hi <b>${user.firstName || user.name}</b>,</p>
           <p>We’re excited to invite you to our dashboard. Click below to join:</p>
+
           <a href="http://localhost:3000"
              style="background: #4CAF50; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px;">
              Visit Dashboard
           </a>
-          <p style="margin-top: 30px; font-size: 12px; color: #aaa;">© ${new Date().getFullYear()} Your Company</p>
-        </div>
+
+          <div style="text-align:center; margin-top:20px;">
+            <p> Please wait for 60 seconds...</p>
+            <img src="https://i.gifer.com/YCZH.gif" alt="60-second countdown" width="200"/>
+          </div>
+
+          <p style="margin-top: 30px; font-size: 12px; color: #aaa;">
+            © ${new Date().getFullYear()} Your Company
+          </p>
+        </div> 
       </body>
     </html>
   `;

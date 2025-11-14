@@ -16,5 +16,12 @@ export const sendEmail = async (to, subject, content, isHtml = false) => {
     [isHtml ? "html" : "text"]: content,
   };
 
-  return await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent:", info.response);
+    return { success: true, message: "Email sent successfully" };
+  } catch (error) {
+    console.error("Email sending error:", error);
+    return { success: false, error };
+  }
 };

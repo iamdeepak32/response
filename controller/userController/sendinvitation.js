@@ -1,4 +1,3 @@
-// controller/userController/sendinvitation.js
 import { pool } from "../../db/conn.js";
 import { sendInvitationEmail } from "../utils/sendMessage.js";
 
@@ -13,9 +12,9 @@ export async function sendinvitation(req, res) {
         message: "User not found",
       });
     }
-
+           
     const user = rows[0];
-
+ 
     await sendInvitationEmail(user);
 
     res.json({

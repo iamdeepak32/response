@@ -8,6 +8,7 @@ export async function GetUsers(req, res) {
 
     const users = rows.map(user => {
       let parsed = [];
+      
 
       if (user.assignedCompanies) {
         parsed = [Number(user.assignedCompanies)];
